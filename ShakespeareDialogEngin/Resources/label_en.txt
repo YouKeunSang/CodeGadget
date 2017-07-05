@@ -1,0 +1,3 @@
+플레이=Play
+계속=con't
+다음=next

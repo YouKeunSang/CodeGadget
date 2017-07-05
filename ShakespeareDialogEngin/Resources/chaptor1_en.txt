@@ -1,0 +1,3 @@
+﻿DIALOG_ID,DIALOG_TEXT
+narrator,In year 2035 there is small country named Mantra in Eastern Europe which is dreaming of past glory. It is this independence was the dictatorship of the minority and the country's vibrant chaos
+narrator2,Ethnic and use of mercenaries to suppress an independence rebels and had raised a number of public-minute 'Hound Dog' bag stands out most in the eyes of the public.

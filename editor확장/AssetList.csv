@@ -1,0 +1,7 @@
+﻿//NAME,type = [SCENE|FILE|DIRECTORY],LOCATION
+DataBaseTable.unity3d,directory,/Assets/Resources/Tables/GameTables/
+DB_Customize_Player.unity3d,directory,/Assets/Prefab/State/Game/DB_Customize/Player
+DB_Customize_player_weapon_shield.unity3d,directory,/Assets/Data/Character/equipment/Prefabs/player
+DB_Customize_Monster.unity3d,directory,/Assets/Prefab/State/Game/DB_Customize/Monster
+DB_Customize_monster_weapon_shield.unity3d,directory,/Assets/Data/Character/equipment/Prefabs/monster
+DB_Customize_Player_head.unity3d,directory,/Assets/Data/Character/pc/c_pwa/parts/prefab/head
