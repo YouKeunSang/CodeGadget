@@ -1,0 +1,21 @@
+﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using System;
+
+//[System.Serializable]
+public class SC[TableName]List : ScriptableObject {
+
+	public SC[TableName]Info[] arrayData;
+	public SC[TableName]Info FindByKey(int key)
+	{
+		return Array.Find(arrayData,d=>d.[KeyField] ==key);
+	}
+	void OnEnable()
+	{
+		if(null == arrayData)
+		{
+			arrayData = new SC[TableName]Info[0];
+		}
+	}
+}

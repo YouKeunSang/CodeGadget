@@ -1,0 +1,1 @@
+title= cmd_setpic:face1 ,dialog:narrator,cmd_setpic:face2 ,dialog:narrator2
