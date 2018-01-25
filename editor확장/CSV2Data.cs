@@ -12,7 +12,7 @@ using System.Reflection;
 public class CSV2Data : Editor{
     const string codeTmplLoc = "Assets/Editor/";
     const string dataAssetPath = "Assets/Resources/DataAssets";
-    const string targetLoc = "Assets/Script/DataStruct/";
+    const string codeTargetPath = "Assets/Script/DataStruct/";
     const string tmplDataFile = "[TableName]Info";
     const string tmplDataHolderFile = "[TableName]DataHolder";
     const string tmplExt = ".cs";
@@ -29,6 +29,7 @@ public class CSV2Data : Editor{
         string path = EditorUtility.OpenFilePanel("CSV파일을 선택하세요\n파일이름이 데이터 테이블이 됩니다", "Datas/Table", "csv");
         if (null == path || "" == path)
             return;
+
         MakeDB(path);
         EditorUtility.DisplayDialog("CSV파일 만들기 완료", "변환완료", "OK");
     }
@@ -38,6 +39,10 @@ public class CSV2Data : Editor{
         lines = File.ReadAllLines(path, Encoding.Default);
         string[] url = path.Split('/');
         string filename = url[url.Length - 1];
+
+        //0. 필요한 디렉토리가 있는지 확인한다
+        CheckAndCreateDirectory();
+
 
         lines[0] = lines[0].Replace("//", "");
         lines[1] = lines[1].Replace("//", "");
@@ -64,7 +69,7 @@ public class CSV2Data : Editor{
     /// <param name="tableName"></param>
     public static void GenerateDataStructTemplete(string tableName)
     {
-        string tmplFullPath = targetLoc + tmplDataFile + tmplExt;
+        string tmplFullPath = codeTargetPath + tmplDataFile + tmplExt;
         string publicMembers = null;
 
         tmplFullPath = tmplFullPath.Replace("[TableName]", tableName);
@@ -88,7 +93,7 @@ public class CSV2Data : Editor{
     static Type GenerateDataHolderTemplete(string tableName, string primaryKey)
     {
         //1. 템플릿파일을 데이터형이 있는곳에 복사한다.
-        string targetPath = targetLoc + tmplDataHolderFile + ".cs";
+        string targetPath = codeTargetPath + tmplDataHolderFile + ".cs";
         string codeTemplete = File.ReadAllText(codeTmplLoc + tmplDataHolderFile);
         string targetClass = tmplDataHolderFile;
 
@@ -99,7 +104,7 @@ public class CSV2Data : Editor{
 
         File.WriteAllText(targetPath, codeTemplete);
 
-        //UnityEditorInternal.InternalEditorUtility.RequestScriptReload();
+        UnityEditorInternal.InternalEditorUtility.RequestScriptReload();
         AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
         AssetDatabase.SaveAssets();
         GC.Collect();
@@ -128,6 +133,12 @@ public class CSV2Data : Editor{
         arrayData.SetValue(asset, dataElements);
 
         string assetPathAndName = AssetDatabase.GenerateUniqueAssetPath(dataAssetPath + "/" + typeof(T).ToString() + "Asset.asset");
+        
+        //파일을 만들기전에 파일이 존재하면 지우고 새로 만들어 (1)같은 파일을 만들지 않는다
+        if(File.Exists(assetPathAndName))
+        {
+            File.Delete(assetPathAndName);
+        }
         AssetDatabase.CreateAsset(asset, assetPathAndName);
         EditorUtility.SetDirty(asset);
         AssetDatabase.SaveAssets();
@@ -187,5 +198,20 @@ public class CSV2Data : Editor{
         }
 
         return _record;
+    }
+
+    //utils
+
+    //필요한 디렉토리를 미리 만든다
+    static void CheckAndCreateDirectory()
+    {
+        if(!Directory.Exists(dataAssetPath))
+        {
+            Directory.CreateDirectory(dataAssetPath);
+        }
+        if(!Directory.Exists(codeTargetPath))
+        {
+            Directory.CreateDirectory(codeTargetPath);
+        }
     }
 }
