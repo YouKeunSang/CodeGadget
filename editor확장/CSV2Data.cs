@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System;
 using System.Reflection;
+using UnityEditor.Callbacks;
 
 public class CSV2Data : Editor{
     const string codeTmplLoc = "Assets/Editor/";
@@ -30,10 +31,32 @@ public class CSV2Data : Editor{
         if (null == path || "" == path)
             return;
 
-        MakeDB(path);
-        EditorUtility.DisplayDialog("CSV파일 만들기 완료", "변환완료", "OK");
+        //MakeDB(path);
+        SyncMakeDB(path);
+        //EditorUtility.DisplayDialog("CSV파일 만들기 완료", "변환완료", "OK");
     }
-    public static void MakeDB(string path)
+    [MenuItem("Tools/All CSV2Data")]
+    public static void MakeAllDB()
+    {
+        string path = EditorUtility.OpenFolderPanel("CSV폴더를 선택하세요\n파일이름이 데이터 테이블이 됩니다", "Datas/Table", "");
+        if (null == path || "" == path)
+            return;
+        string[] _csvFiles = Directory.GetFiles(path, "*.csv");
+        if (0 < _csvFiles.Length)
+        {
+            foreach (string s in _csvFiles)
+            {
+                MakeDB(path);
+            }
+            EditorUtility.DisplayDialog("모든 CSV파일 만들기 완료", "변환완료", "OK");
+        }
+        else
+        {
+            EditorUtility.DisplayDialog("CSV파일 없네요", "장난하심?", "OK");
+        }
+    }
+
+    private static string MakeLines(ref string path)
     {
         path = path.Replace("\\", "/");
         lines = File.ReadAllLines(path, Encoding.Default);
@@ -49,13 +72,18 @@ public class CSV2Data : Editor{
         fieldNames = lines[0].Split(',');
         fieldTypes = lines[1].Split(',');
         //코멘트까지 있을지 모르지만 있다면 해보자
-        if(lines[2].StartsWith("//"))
+        if (lines[2].StartsWith("//"))
         {
             lines[2] = lines[2].Replace("//", "");
             comments = lines[2].Split(',');
             _dataStartPos++;
         }
-        string table_name = filename.Split('.')[0];
+        return filename;
+    }
+
+    public static void MakeDB(string path)
+    {
+        string table_name = MakeLines(ref path).Split('.')[0];
         GenerateDataStructTemplete(table_name);
         Type T = GenerateDataHolderTemplete(table_name, fieldNames[0]);
         MethodInfo method = typeof(CSV2Data).GetMethod("CreateAsset",BindingFlags.Static|BindingFlags.Public);
@@ -104,14 +132,13 @@ public class CSV2Data : Editor{
 
         File.WriteAllText(targetPath, codeTemplete);
 
-        UnityEditorInternal.InternalEditorUtility.RequestScriptReload();
+        //UnityEditorInternal.InternalEditorUtility.RequestScriptReload();
         AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
         AssetDatabase.SaveAssets();
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-
+        //EditorApplication.update += OnEditorUpdate;
         return Type.GetType(targetClass + ",Assembly-CSharp");
     }
+
     public static void CreateAsset<T>(string tableName, string primaryKey) where T : ScriptableObject
     {
         T asset = ScriptableObject.CreateInstance<T>();
@@ -132,10 +159,11 @@ public class CSV2Data : Editor{
         }
         arrayData.SetValue(asset, dataElements);
 
-        string assetPathAndName = AssetDatabase.GenerateUniqueAssetPath(dataAssetPath + "/" + typeof(T).ToString() + "Asset.asset");
-        
+        //string assetPathAndName = AssetDatabase.GenerateUniqueAssetPath(dataAssetPath + "/" + typeof(T).ToString() + "Asset.asset");
+        string assetPathAndName = dataAssetPath + "/" + typeof(T).ToString() + "Asset.asset";
+
         //파일을 만들기전에 파일이 존재하면 지우고 새로 만들어 (1)같은 파일을 만들지 않는다
-        if(File.Exists(assetPathAndName))
+        if (File.Exists(assetPathAndName))
         {
             File.Delete(assetPathAndName);
         }
@@ -213,5 +241,96 @@ public class CSV2Data : Editor{
         {
             Directory.CreateDirectory(codeTargetPath);
         }
+    }
+    static void CreateLock(string pathName,string className,string keyName)
+    {
+        StreamWriter _sw = File.CreateText(".Lock.txt");
+        _sw.WriteLine("pathName=" + pathName);
+        _sw.WriteLine("className=" + className);
+        _sw.WriteLine("keyName=" + keyName);
+        _sw.Close();
+    }
+    static bool SecureLock(out string pathName,out string className,out string keyName)
+    {
+        pathName = null;
+        className = null;
+        keyName = null;
+
+        if (!File.Exists(".Lock.txt"))
+        {
+            return false;
+        }
+        string[] _lines = File.ReadAllLines(".Lock.txt");
+        foreach(string s in _lines)
+        {
+            string[] _oneLine = s.Split('=');
+            switch(_oneLine[0])
+            {
+                case "pathName":
+                    pathName = _oneLine[1];
+                    break;
+                case "className":
+                    className = _oneLine[1];
+                    break;
+                case "keyName":
+                    keyName = _oneLine[1];
+                    break;
+                default:
+                    Debug.LogWarning("모르는 구별자 있음");
+                    break;
+            }
+        }
+        File.Delete(".Lock.txt");
+        return true;
+    }
+    ////////////////////////////////////////////////////
+    // 타입을 만드는 부분에 sleep()을 넣을수 없어서
+    // 코루틴으로 만들어봄
+    ////////////////////////////////////////////////////
+    public static void SyncMakeDB(string path)
+    {
+        string table_name = MakeLines(ref path).Split('.')[0];
+        GenerateDataStructTemplete(table_name);
+
+        //Type T = GenerateDataHolderTemplete(table_name, fieldNames[0]);
+        CoroutineGenerateDataHolderTemplete(table_name, fieldNames[0],path);
+    }
+
+    [DidReloadScripts(0)]
+    static void PostProcess()
+    {
+        string _path;
+        string _className;
+        string _tableName;
+        string _keyName;
+
+        if (SecureLock(out _path,out _className, out _keyName))
+        {
+            _tableName = MakeLines(ref _path).Split('.')[0];
+            Type T = Type.GetType(_className + ",Assembly-CSharp");
+            MethodInfo method = typeof(CSV2Data).GetMethod("CreateAsset", BindingFlags.Static | BindingFlags.Public);
+            MethodInfo generic = method.MakeGenericMethod(T);
+            generic.Invoke(null, new object[] { _tableName, _keyName });
+            EditorUtility.DisplayDialog("CSV파일 만들기 완료", "변환완료", "OK");
+        }
+    }
+    static void CoroutineGenerateDataHolderTemplete(string tableName, string primaryKey,string pathName)
+    {
+        //1. 템플릿파일을 데이터형이 있는곳에 복사한다.
+        string targetPath = codeTargetPath + tmplDataHolderFile + ".cs";
+        string codeTemplete = File.ReadAllText(codeTmplLoc + tmplDataHolderFile);
+        string targetClass = tmplDataHolderFile;
+
+        targetPath = targetPath.Replace("[TableName]", tableName);
+        targetClass = targetClass.Replace("[TableName]", tableName);
+        codeTemplete = codeTemplete.Replace("[TableName]", tableName);
+        codeTemplete = codeTemplete.Replace("[KeyField]", primaryKey);
+
+        File.WriteAllText(targetPath, codeTemplete);
+
+        //UnityEditorInternal.InternalEditorUtility.RequestScriptReload();
+        AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+        AssetDatabase.SaveAssets();
+        CreateLock(pathName,targetClass, primaryKey);
     }
 }
