@@ -7,7 +7,7 @@ using System;
 public class [TableName]DataHolder : ScriptableObject {
 
 	public [TableName]Info[] arrayData;
-	public [TableName]Info FindByKey(int key)
+	public [TableName]Info FindByKey([KeyType] key)
 	{
 		return Array.Find(arrayData,d=>d.[KeyField] ==key);
 	}

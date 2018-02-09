@@ -293,7 +293,7 @@ public class CSV2Data : Editor{
         GenerateDataStructTemplete(table_name);
 
         //Type T = GenerateDataHolderTemplete(table_name, fieldNames[0]);
-        CoroutineGenerateDataHolderTemplete(table_name, fieldNames[0],path);
+        CoroutineGenerateDataHolderTemplete(table_name, fieldNames[0],fieldTypes[0],path);
     }
 
     [DidReloadScripts(0)]
@@ -314,7 +314,7 @@ public class CSV2Data : Editor{
             EditorUtility.DisplayDialog("CSV파일 만들기 완료", "변환완료", "OK");
         }
     }
-    static void CoroutineGenerateDataHolderTemplete(string tableName, string primaryKey,string pathName)
+    static void CoroutineGenerateDataHolderTemplete(string tableName, string primaryKey,string keyType,string pathName)
     {
         //1. 템플릿파일을 데이터형이 있는곳에 복사한다.
         string targetPath = codeTargetPath + tmplDataHolderFile + ".cs";
@@ -325,6 +325,7 @@ public class CSV2Data : Editor{
         targetClass = targetClass.Replace("[TableName]", tableName);
         codeTemplete = codeTemplete.Replace("[TableName]", tableName);
         codeTemplete = codeTemplete.Replace("[KeyField]", primaryKey);
+        codeTemplete = codeTemplete.Replace("[KeyType]", keyType);
 
         File.WriteAllText(targetPath, codeTemplete);
 
