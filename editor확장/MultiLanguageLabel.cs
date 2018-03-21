@@ -86,6 +86,7 @@ public class MultiLanguageLabel : Text {
                     break;
             }
         }
+        DataManager.Instance.CleanUp();
         return true;
     }
 }

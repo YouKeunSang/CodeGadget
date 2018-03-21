@@ -14,10 +14,6 @@ public class MultiLanguageLabelEditor : Editor {
     private void OnEnable()
     {
         _target = (MultiLanguageLabel)target;
-        if(_target.langType != GameManager.instance.language)
-        {
-            Debug.Log("not default language");
-        }
     }
     // Use this for initialization
     void Start () {
