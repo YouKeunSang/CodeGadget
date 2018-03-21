@@ -126,6 +126,10 @@ public class LanguageChanger : Editor
 
     public static void RebuildLanguage(LANGUAGE_TYPE type)
     {
+        if(Application.isPlaying)
+        {
+            GameManager.instance.language = type;
+        }
         MultiLanguageLabel[] _objects = FindObjectsOfType<MultiLanguageLabel>();
         foreach (MultiLanguageLabel o in _objects)
         {

@@ -29,6 +29,12 @@ public class MultiLanguageLabel : Text {
             langType = GameManager.instance.language;
         }
         OnChangeLanguage();
+        base.OnEnable();
+    }
+    public bool SetText(string uiID)
+    {
+        this.uiID = uiID;
+        return OnChangeLanguage();
     }
     [ExecuteInEditMode]
     public void OnChangeLanguage(LANGUAGE_TYPE lang)
