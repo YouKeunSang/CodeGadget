@@ -1,4 +1,5 @@
-﻿using System;
+﻿//#define DATA_MANAGER_IS_GAME_OBJECT
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,9 +7,10 @@ using UnityEngine;
 /// <summary>
 /// todo: 에셋자체가 너무 커질경우 동적으로 읽고, 필요없으면 내리는 작업을 추가한다.
 /// </summary>
+#if DATA_MANAGER_IS_GAME_OBJECT
 public class DataManager : MonoBehaviour
 {
-    #region Singleton
+#region Singleton
 
     private static DataManager s_Instance = null;
 
@@ -25,7 +27,41 @@ public class DataManager : MonoBehaviour
             {
                 GameObject obj = new GameObject("_DataManager");
                 s_Instance = obj.AddComponent(typeof(DataManager)) as DataManager;
-                DontDestroyOnLoad(obj);
+                if (Application.isPlaying)
+                {
+                    DontDestroyOnLoad(obj);
+                }
+            }
+
+            return s_Instance;
+        }
+    }
+    #endregion Singleton
+    
+    public void CleanUp()
+    {
+       
+        if (!Application.isPlaying)
+        {
+            _isInit = false;
+            DestroyImmediate(this.gameObject);
+        }
+    }
+#else
+public class DataManager
+{
+    #region Singleton
+
+    private static DataManager s_Instance = null;
+
+    public static DataManager Instance
+    {
+        get
+        {
+            if (s_Instance == null)
+            {
+                //s_Instance = FindObjectOfType(typeof(DataManager)) as DataManager;
+                s_Instance = new DataManager();
             }
 
             return s_Instance;
@@ -34,6 +70,16 @@ public class DataManager : MonoBehaviour
 
     #endregion Singleton
 
+    public void CleanUp()
+    {
+
+        if (!Application.isPlaying)
+        {
+            _isInit = false;
+            //DestroyImmediate(this.gameObject);
+        }
+    }
+#endif
     public List<ScriptableObject> _allDatas = new List<ScriptableObject>();
     private static bool _isInit = false;
 
@@ -105,7 +151,7 @@ public class DataManager : MonoBehaviour
         {
             if (s.GetType().GetField("arrayData").FieldType.GetElementType() == typeof(T))
             {
-                return ((T[])s.GetType().GetField("arrayData").GetValue(s)).ToList().FindAll(match)
+                return ((T[])s.GetType().GetField("arrayData").GetValue(s)).ToList().FindAll(match);
             }
         }
         Debug.LogError("not find data type " + typeof(T));
